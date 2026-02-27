@@ -1,0 +1,2217 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Say Ah - Voice Exercise</title>
+    <style>
+        /* ============================================================
+           RESET & BASE STYLES
+           ============================================================ */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        html, body {
+            width: 100%;
+            height: 100%;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', sans-serif;
+        }
+
+        body {
+            background-color: #FDF8F2;
+            color: #2A4A4A;
+            font-size: 28px;
+            line-height: 1.5;
+            overflow: hidden;
+        }
+
+        /* ============================================================
+           SCREEN CONTAINER & TRANSITIONS
+           ============================================================ */
+        #app-container {
+            width: 100%;
+            height: 100%;
+            position: relative;
+        }
+
+        .screen {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 40px;
+            opacity: 0;
+            transition: opacity 0.5s ease-in-out;
+            overflow-y: auto;
+        }
+
+        .screen.active {
+            display: flex;
+            opacity: 1;
+        }
+
+        /* ============================================================
+           PROGRESS BAR (top of exercise screens)
+           ============================================================ */
+        .progress-bar-container {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 8px;
+            background-color: rgba(42, 124, 124, 0.1);
+        }
+
+        .progress-bar-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #2A7C7C 0%, #E07B5A 100%);
+            transition: width 0.3s ease;
+            width: 0%;
+        }
+
+        /* ============================================================
+           TYPOGRAPHY & HEADINGS
+           ============================================================ */
+        h1 {
+            font-size: 56px;
+            font-weight: 700;
+            color: #2A7C7C;
+            margin-bottom: 16px;
+            text-align: center;
+        }
+
+        h2 {
+            font-size: 44px;
+            font-weight: 600;
+            color: #2A7C7C;
+            margin-bottom: 24px;
+            text-align: center;
+        }
+
+        h3 {
+            font-size: 32px;
+            font-weight: 600;
+            color: #2A7C7C;
+            margin-bottom: 16px;
+            text-align: center;
+        }
+
+        p, .instruction-text {
+            font-size: 28px;
+            color: #2A4A4A;
+            text-align: center;
+            margin-bottom: 12px;
+            line-height: 1.6;
+        }
+
+        .subtitle {
+            font-size: 24px;
+            color: #E07B5A;
+            font-weight: 500;
+        }
+
+        /* ============================================================
+           BUTTONS
+           ============================================================ */
+        button, .button {
+            min-height: 72px;
+            min-width: 200px;
+            padding: 16px 32px;
+            font-size: 26px;
+            font-weight: 600;
+            border: none;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: inline-block;
+            text-align: center;
+            text-decoration: none;
+            margin: 12px;
+            -webkit-user-select: none;
+            user-select: none;
+            touch-action: manipulation;
+        }
+
+        .btn-primary {
+            background-color: #2A7C7C;
+            color: white;
+            box-shadow: 0 4px 12px rgba(42, 124, 124, 0.3);
+        }
+
+        .btn-primary:hover {
+            background-color: #1F5A5A;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 16px rgba(42, 124, 124, 0.4);
+        }
+
+        .btn-primary:active {
+            transform: translateY(0px);
+            box-shadow: 0 2px 8px rgba(42, 124, 124, 0.3);
+        }
+
+        .btn-secondary {
+            background-color: #E07B5A;
+            color: white;
+            box-shadow: 0 4px 12px rgba(224, 123, 90, 0.3);
+        }
+
+        .btn-secondary:hover {
+            background-color: #D56840;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 16px rgba(224, 123, 90, 0.4);
+        }
+
+        .btn-secondary:active {
+            transform: translateY(0px);
+            box-shadow: 0 2px 8px rgba(224, 123, 90, 0.3);
+        }
+
+        .btn-small {
+            min-width: 150px;
+            min-height: 56px;
+            font-size: 20px;
+            padding: 12px 24px;
+        }
+
+        a.link-button {
+            color: #2A7C7C;
+            font-size: 22px;
+            text-decoration: underline;
+            cursor: pointer;
+            margin: 8px;
+            transition: color 0.2s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 72px;
+            min-width: 200px;
+            padding: 16px 32px;
+            border-radius: 8px;
+        }
+
+        a.link-button:hover {
+            color: #E07B5A;
+        }
+
+        a.link-button:focus {
+            outline: 3px solid #E07B5A;
+            outline-offset: 4px;
+        }
+
+        /* ============================================================
+           SVG ICON STYLES
+           ============================================================ */
+        .icon-container {
+            margin-bottom: 24px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        svg {
+            max-width: 100%;
+            height: auto;
+        }
+
+        /* ============================================================
+           VERTICAL AUDIO METER  — zone-aware
+           ============================================================ */
+        .audio-meter-wrapper {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin: 24px auto;
+        }
+
+        .meter-with-labels {
+            display: flex;
+            align-items: flex-start;
+            gap: 10px;
+        }
+
+        /* Relative container so tick marks can use absolute positioning */
+        .meter-track-wrapper {
+            position: relative;
+            width: 56px;
+            height: 200px;
+            flex-shrink: 0;
+        }
+
+        .audio-meter-track {
+            width: 100%;
+            height: 100%;
+            border-radius: 28px;
+            overflow: hidden;
+            box-shadow: inset 0 2px 8px rgba(0, 0, 0, 0.12);
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-end; /* fill grows from bottom */
+            /* Zone-tinted background: yellow (0-25%), green (25-70%), red (70-100%) */
+            background: linear-gradient(0deg,
+                rgba(244, 196, 52,  0.22) 0%,
+                rgba(244, 196, 52,  0.22) 25%,
+                rgba(52,  199, 89,  0.22) 25%,
+                rgba(52,  199, 89,  0.22) 70%,
+                rgba(224, 123, 90,  0.22) 70%,
+                rgba(224, 123, 90,  0.22) 100%
+            );
+        }
+
+        /* Thin dividing lines at zone boundaries */
+        .meter-tick {
+            position: absolute;
+            left: 6px;
+            right: 6px;
+            height: 2px;
+            background: rgba(0, 0, 0, 0.15);
+            pointer-events: none;
+            border-radius: 1px;
+        }
+        #meter-tick-low  { bottom: 24%; }   /* METER_SOFT_THRESHOLD / CHART_MAX_LEVEL = 0.06/0.25 */
+        #meter-tick-high { bottom: 72%; }   /* METER_LOUD_THRESHOLD / CHART_MAX_LEVEL = 0.18/0.25 */
+
+        #audio-meter-fill {
+            width: 100%;
+            height: 0%;
+            background-color: #34C759;      /* default green; overridden by JS */
+            transition: height 0.08s linear, background-color 0.12s ease;
+            border-radius: 28px;
+        }
+
+        #audio-meter-fill.pulsing {
+            animation: pulse-meter 1.5s ease-in-out infinite;
+        }
+
+        @keyframes pulse-meter {
+            0%, 100% { height: 4%;  opacity: 0.5; }
+            50%       { height: 12%; opacity: 0.85; }
+        }
+
+        /* Zone labels grid — rows mirror the three zones (top → bottom) */
+        .meter-zone-labels {
+            height: 200px;          /* must match .meter-track-wrapper height */
+            display: grid;
+            grid-template-rows: 28% 48% 24%;   /* quite loud / target / too soft  (matches CHART_MAX_LEVEL scale) */
+        }
+
+        .zone-label {
+            display: flex;
+            align-items: center;
+            font-size: 13px;
+            font-weight: 600;
+            line-height: 1.2;
+            padding-left: 2px;
+            white-space: nowrap;
+        }
+
+        .zone-loud   { color: #c04e26; align-items: flex-start; padding-top:    4px; }
+        .zone-target { color: #1a6a1a; }
+        .zone-soft   { color: #8a6800; align-items: flex-end;   padding-bottom: 4px; }
+
+        /* ============================================================
+           DURATION DISPLAY
+           ============================================================ */
+        #duration-display {
+            font-size: 80px;
+            font-weight: 700;
+            color: #2A7C7C;
+            text-align: center;
+            margin: 40px 0;
+            font-variant-numeric: tabular-nums;
+            letter-spacing: 2px;
+        }
+
+        /* ============================================================
+           SCREEN: WELCOME
+           ============================================================ */
+        #screen-welcome {
+            flex-direction: column;
+            justify-content: center;
+        }
+
+        .welcome-content {
+            text-align: center;
+            max-width: 600px;
+        }
+
+        .button-group {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+            margin-top: 40px;
+            align-items: center;
+        }
+
+        /* ============================================================
+           SCREEN: PRE-REP
+           ============================================================ */
+        #screen-pre-rep {
+            flex-direction: column;
+            justify-content: center;
+            gap: 32px;
+        }
+
+        #pre-rep-number {
+            font-size: 44px;
+            color: #E07B5A;
+        }
+
+        #pre-rep-tip {
+            background-color: rgba(224, 123, 90, 0.15);
+            border-left: 4px solid #E07B5A;
+            padding: 16px 20px;
+            border-radius: 8px;
+            font-size: 22px;
+            color: #2A4A4A;
+            max-width: 500px;
+            margin: 20px auto 0;
+        }
+
+        /* ============================================================
+           SCREEN: EXERCISE
+           ============================================================ */
+        #screen-exercise {
+            flex-direction: column;
+            justify-content: center;
+            gap: 10px;
+            padding-top: 40px;
+        }
+
+        .exercise-header {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 8px;
+        }
+
+        #exercise-rep-number {
+            font-size: 32px;
+            color: #E07B5A;
+            font-weight: 600;
+        }
+
+        .keep-going-text {
+            font-size: 28px;
+            color: #2A4A4A;
+            margin-bottom: 8px;
+        }
+
+        /* Tip banner that fades in at start of each rep */
+        #exercise-tip {
+            font-size: 18px;
+            color: #2A4A4A;
+            background: rgba(42, 124, 124, 0.10);
+            border-left: 3px solid #2A7C7C;
+            padding: 10px 16px;
+            border-radius: 8px;
+            max-width: 420px;
+            text-align: left;
+            line-height: 1.4;
+            margin: 0 auto;
+            transition: opacity 0.6s ease;
+        }
+
+        /* Strip chart — scrolling loudness history */
+        .strip-chart-wrapper {
+            width: 100%;
+            max-width: 480px;
+            margin: 4px auto 0;
+        }
+        #strip-chart {
+            display: block;
+            width: 100%;
+            height: 88px;
+            border-radius: 10px;
+            border: 1px solid rgba(0, 0, 0, 0.08);
+            background: transparent;
+        }
+        .strip-chart-label {
+            font-size: 13px;
+            color: #5A6A6A;
+            text-align: center;
+            margin-top: 3px;
+            letter-spacing: 0.2px;
+        }
+
+        /* ============================================================
+           SCREEN: REP RESULT
+           ============================================================ */
+        #screen-rep-result {
+            flex-direction: column;
+            justify-content: center;
+            gap: 16px;
+        }
+
+        #result-rep-number {
+            font-size: 32px;
+            color: #E07B5A;
+            font-weight: 600;
+        }
+
+        #result-duration {
+            font-size: 48px;
+            font-weight: 700;
+            color: #2A7C7C;
+            margin: 24px 0;
+            line-height: 1.4;
+        }
+
+        #result-strip-chart {
+            display: block;
+            width: 100%;
+            max-width: 540px;
+            height: 140px;
+            border-radius: 10px;
+            border: 1px solid rgba(0,0,0,0.08);
+            margin: 16px auto;
+        }
+
+        #result-message {
+            font-size: 26px;
+            color: #2A4A4A;
+            max-width: 600px;
+            text-align: center;
+            margin: 20px 0 40px;
+            line-height: 1.6;
+        }
+
+        /* ============================================================
+           SCREEN: SESSION COMPLETE
+           ============================================================ */
+        #screen-session-complete {
+            flex-direction: column;
+            justify-content: flex-start;
+            padding-top: 60px;
+            overflow-y: auto;
+        }
+
+        #session-summary-message {
+            font-size: 28px;
+            color: #2A4A4A;
+            margin: 24px 0 40px;
+            max-width: 600px;
+        }
+
+        /* ============================================================
+           RESULTS CHART
+           ============================================================ */
+        #results-chart {
+            width: 100%;
+            max-width: 700px;
+            margin: 40px auto;
+            padding: 20px;
+            background-color: rgba(42, 124, 124, 0.05);
+            border-radius: 12px;
+        }
+
+        .chart-row {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            margin-bottom: 16px;
+        }
+
+        .chart-label {
+            min-width: 120px;
+            font-size: 20px;
+            color: #2A4A4A;
+            text-align: right;
+            font-weight: 500;
+        }
+
+        .chart-bar-container {
+            flex: 1;
+            height: 32px;
+            background-color: rgba(42, 124, 124, 0.1);
+            border-radius: 6px;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .chart-bar {
+            height: 100%;
+            background: linear-gradient(90deg, #2A7C7C 0%, #E07B5A 100%);
+            border-radius: 6px;
+            transition: width 0.5s ease;
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+            padding-right: 8px;
+        }
+
+        .chart-bar-value {
+            font-size: 14px;
+            color: white;
+            font-weight: 600;
+            white-space: nowrap;
+        }
+
+        .target-line {
+            position: absolute;
+            top: 0;
+            bottom: 0;
+            width: 2px;
+            background-color: #E07B5A;
+            opacity: 0.7;
+        }
+
+        #personal-best-display {
+            font-size: 24px;
+            color: #2A7C7C;
+            text-align: center;
+            margin-top: 24px;
+            font-weight: 600;
+        }
+
+        .results-button-group {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+            margin-top: 40px;
+            margin-bottom: 40px;
+            align-items: center;
+        }
+
+        /* ============================================================
+           SCREEN: HISTORY
+           ============================================================ */
+        #screen-history {
+            flex-direction: column;
+            justify-content: flex-start;
+            padding-top: 40px;
+        }
+
+        #history-list {
+            width: 100%;
+            max-width: 700px;
+            margin: 20px auto;
+            list-style: none;
+        }
+
+        .history-item {
+            background-color: rgba(42, 124, 124, 0.08);
+            border-left: 4px solid #2A7C7C;
+            padding: 20px;
+            margin-bottom: 16px;
+            border-radius: 8px;
+            font-size: 22px;
+            color: #2A4A4A;
+        }
+
+        .history-item-date {
+            font-weight: 600;
+            color: #2A7C7C;
+            margin-bottom: 8px;
+        }
+
+        .history-item-stat {
+            font-size: 20px;
+            color: #5A6A6A;
+            margin: 4px 0;
+        }
+
+        /* ============================================================
+           NAME INPUT
+           ============================================================ */
+        .name-input-wrapper {
+            margin: 28px auto 0;
+            text-align: center;
+        }
+
+        .name-label {
+            display: block;
+            font-size: 20px;
+            color: #5A6A6A;
+            margin-bottom: 10px;
+        }
+
+        .name-input {
+            width: 280px;
+            padding: 14px 20px;
+            font-size: 24px;
+            font-family: inherit;
+            border: 2px solid #CCCCCC;
+            border-radius: 10px;
+            background: #FFFFFF;
+            color: #2A4A4A;
+            text-align: center;
+            outline: none;
+            transition: border-color 0.2s;
+            -webkit-appearance: none;
+        }
+
+        .name-input:focus {
+            border-color: #2A7C7C;
+            box-shadow: 0 0 0 3px rgba(42, 124, 124, 0.15);
+        }
+
+        /* ============================================================
+           MIC PERMISSION NOTICE
+           ============================================================ */
+        #mic-notice {
+            display: none;
+            background: rgba(224, 123, 90, 0.12);
+            border: 2px solid #E07B5A;
+            border-radius: 12px;
+            padding: 24px;
+            max-width: 520px;
+            text-align: center;
+            font-size: 22px;
+            color: #2A4A4A;
+            line-height: 1.6;
+            margin-top: 20px;
+        }
+
+        /* ============================================================
+           MIC PERMISSION GUIDANCE  — Safari / macOS style mock
+           ============================================================ */
+
+        /* Floating card — matches macOS sheet shadow */
+        .mic-safari-dialog {
+            max-width: 340px;
+            margin: 20px auto 4px;
+            background: #ffffff;
+            border-radius: 14px;
+            box-shadow: 0 10px 36px rgba(0,0,0,0.22), 0 0 0 1px rgba(0,0,0,0.06);
+            overflow: hidden;
+            font-family: -apple-system, "SF Pro Text", Arial, sans-serif;
+            text-align: left;
+        }
+
+        /* Header row: mic icon | subtitle text | × close circle */
+        .mic-safari-header {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 14px 14px 10px;
+            border-bottom: 1px solid #e5e5ea;
+        }
+        .mic-safari-header-text {
+            flex: 1;
+            font-size: 13px;
+            color: #8e8e93;
+        }
+        .mic-safari-close {
+            width: 22px;
+            height: 22px;
+            background: #e5e5ea;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 13px;
+            color: #636366;
+            cursor: default;
+            flex-shrink: 0;
+        }
+
+        /* "Use available microphones (1)" row */
+        .mic-safari-request {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 12px 14px 10px;
+        }
+        .mic-safari-request-text {
+            font-size: 14px;
+            font-weight: 600;
+            color: #1c1c1e;
+        }
+
+        /* Gray preview card with animated level bar + dropdown */
+        .mic-safari-preview-card {
+            margin: 0 14px 12px;
+            background: #f2f2f7;
+            border-radius: 10px;
+            padding: 9px 11px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .mic-safari-level-track {
+            flex: 1;
+            height: 5px;
+            background: #d1d1d6;
+            border-radius: 3px;
+            overflow: hidden;
+        }
+        .mic-safari-level-fill {
+            width: 30%;
+            height: 100%;
+            background: #34c759;
+            border-radius: 3px;
+            animation: safari-level 2.2s ease-in-out infinite;
+        }
+        @keyframes safari-level {
+            0%, 100% { width: 18%; }
+            40%       { width: 52%; }
+            70%       { width: 28%; }
+        }
+        .mic-safari-dropdown-label {
+            font-size: 10px;
+            color: #636366;
+            white-space: nowrap;
+            display: flex;
+            align-items: center;
+            gap: 2px;
+            flex-shrink: 0;
+        }
+
+        /* Three stacked yellow pill buttons */
+        .mic-safari-buttons {
+            padding: 0 14px 14px;
+            display: flex;
+            flex-direction: column;
+            gap: 7px;
+        }
+        .mic-safari-btn {
+            width: 100%;
+            padding: 10px 14px;
+            border-radius: 20px;
+            font-family: -apple-system, "SF Pro Text", Arial, sans-serif;
+            font-size: 13px;
+            font-weight: 500;
+            background: #f2c94c;     /* Safari permission yellow */
+            color: #1c1c1e;
+            border: none;
+            cursor: default;
+            text-align: center;
+        }
+        /* Pulse glow on the recommended "Allow while visiting" button */
+        .mic-safari-btn-primary {
+            animation: btn-glow-yellow 2s ease-in-out infinite;
+        }
+        @keyframes btn-glow-yellow {
+            0%, 100% { box-shadow: 0 0 0 0   rgba(242,201,76,0.7); }
+            50%       { box-shadow: 0 0 0 9px rgba(242,201,76,0.0); }
+        }
+
+        /* Arrow label pointing at the top button */
+        .mic-safari-annotation {
+            text-align: center;
+            margin-top: 6px;
+            font-size: 17px;
+            color: #2A7C7C;
+            font-weight: 700;
+            letter-spacing: -0.01em;
+        }
+
+        /* ============================================================
+           RESPONSIVE & ACCESSIBILITY
+           ============================================================ */
+        @media (max-width: 768px) {
+            body { font-size: 24px; }
+            h1   { font-size: 44px; }
+            h2   { font-size: 36px; }
+            h3   { font-size: 28px; }
+            button, .button {
+                font-size: 22px;
+                min-width: 180px;
+                min-height: 64px;
+            }
+            #duration-display  { font-size: 64px; }
+            #result-duration   { font-size: 40px; }
+            .chart-label       { min-width: 100px; font-size: 18px; }
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+            .screen, button, .button, .progress-bar-fill, .chart-bar {
+                transition: none;
+            }
+            #audio-meter-fill.pulsing {
+                animation: none;
+                height: 5%;
+            }
+        }
+
+        @media (prefers-contrast: more) {
+            body { background-color: #FFFFFF; }
+            button, .button { border: 2px solid currentColor; }
+        }
+
+        /* ============================================================
+           FOCUS STATES (keyboard accessibility)
+           ============================================================ */
+        button:focus, .button:focus, a:focus {
+            outline: 3px solid #E07B5A;
+            outline-offset: 4px;
+        }
+
+        /* ============================================================
+           CONTAINER & LAYOUT
+           ============================================================ */
+        .content-wrapper {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 16px;
+            max-width: 800px;
+            width: 100%;
+        }
+    </style>
+</head>
+<body>
+<div id="app-container">
+
+    <!-- SCREEN 1: WELCOME -->
+    <div id="screen-welcome" class="screen active">
+        <div class="welcome-content">
+            <div class="icon-container">
+                <svg width="120" height="120" viewBox="0 0 120 120" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <circle cx="60" cy="60" r="50" fill="none" stroke="#2A7C7C" stroke-width="3"/>
+                    <!-- Smiling mouth -->
+                    <path d="M 35 65 Q 60 85 85 65" stroke="#E07B5A" stroke-width="4" fill="none" stroke-linecap="round"/>
+                    <!-- Sound waves -->
+                    <path d="M 95 50 Q 100 55 95 60" stroke="#2A7C7C" stroke-width="3" fill="none" stroke-linecap="round"/>
+                    <path d="M 103 44 Q 113 55 103 66" stroke="#2A7C7C" stroke-width="3" fill="none" stroke-linecap="round"/>
+                </svg>
+            </div>
+            <h1>Say Ah</h1>
+            <p class="subtitle">Voice Exercise</p>
+            <p class="instruction-text" style="margin-top: 40px;">
+                Today you'll do 15 voice rounds.<br>Take your time with each one.
+            </p>
+            <div class="name-input-wrapper">
+                <label for="user-name-input" class="name-label">Your first name (optional)</label>
+                <input type="text"
+                       id="user-name-input"
+                       class="name-input"
+                       placeholder="e.g. Margaret"
+                       maxlength="30"
+                       autocomplete="given-name"
+                       autocapitalize="words"
+                       spellcheck="false">
+            </div>
+            <div id="mic-notice">
+                We need your microphone to track your voice. Please allow microphone access in your browser, then press "Let's Begin" again.
+            </div>
+            <div class="button-group">
+                <button class="btn-primary" onclick="startSession()">Let's Begin</button>
+                <a class="link-button" onclick="showHistory()">View History</a>
+            </div>
+        </div>
+    </div>
+
+    <!-- SCREEN 2: PRE-REP -->
+    <div id="screen-pre-rep" class="screen">
+        <div class="progress-bar-container">
+            <div class="progress-bar-fill" id="pre-rep-progress"></div>
+        </div>
+        <div class="content-wrapper">
+            <h2 id="pre-rep-number">Round 1 of 15</h2>
+            <p class="instruction-text">
+                Take a breath, then say "Ahhh" as long and as comfortably as you can.
+            </p>
+            <div id="pre-rep-tip" style="display: none;"></div>
+            <button class="btn-primary" onclick="startRep()" style="margin-top: 40px;">
+                I'm Ready — Start
+            </button>
+        </div>
+    </div>
+
+    <!-- SCREEN 3: EXERCISE -->
+    <div id="screen-exercise" class="screen">
+        <div class="progress-bar-container">
+            <div class="progress-bar-fill" id="exercise-progress"></div>
+        </div>
+        <div class="exercise-header">
+            <div id="exercise-rep-number">Round 1 of 15</div>
+            <p class="keep-going-text">Take a breath... then say Ahh</p>
+        </div>
+        <!-- Tip from previous rep — fades after 5 s -->
+        <div id="exercise-tip" style="display:none;"></div>
+        <div id="duration-display">0.0s</div>
+        <div class="audio-meter-wrapper">
+            <div class="meter-with-labels">
+                <!-- Track + zone-boundary tick marks -->
+                <div class="meter-track-wrapper">
+                    <div class="audio-meter-track">
+                        <div id="audio-meter-fill" class="pulsing"></div>
+                    </div>
+                    <div class="meter-tick" id="meter-tick-high"></div>
+                    <div class="meter-tick" id="meter-tick-low"></div>
+                </div>
+                <!-- Zone labels (grid rows: quite loud / target range / too soft) -->
+                <div class="meter-zone-labels">
+                    <div class="zone-label zone-loud">Quite loud</div>
+                    <div class="zone-label zone-target">Target range</div>
+                    <div class="zone-label zone-soft">Too soft</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Strip chart: loudness history for this rep -->
+        <div class="strip-chart-wrapper">
+            <canvas id="strip-chart"></canvas>
+            <div class="strip-chart-label">Loudness over time this round</div>
+        </div>
+        <button class="btn-secondary" id="stop-btn" onclick="stopRep()" style="margin-top: 40px;">
+            Done — Stop
+        </button>
+    </div>
+
+    <!-- SCREEN 4: REP RESULT -->
+    <div id="screen-rep-result" class="screen">
+        <div class="progress-bar-container">
+            <div class="progress-bar-fill" id="result-progress"></div>
+        </div>
+        <div class="content-wrapper">
+            <div id="result-rep-number">Round 1 of 15</div>
+            <div id="result-duration">You held it for 0.0 seconds!</div>
+            <!-- Loudness chart replaces the old check-mark icon -->
+            <canvas id="result-strip-chart"></canvas>
+            <div id="result-message">Great effort!</div>
+            <button class="btn-primary" id="next-btn" onclick="nextRep()" style="margin-top: 40px;">
+                Next Round
+            </button>
+        </div>
+    </div>
+
+    <!-- SCREEN 5: SESSION COMPLETE -->
+    <div id="screen-session-complete" class="screen">
+        <h2>Session Complete!</h2>
+        <p id="session-summary-message">Fantastic work! You completed all 15 rounds.</p>
+        <div id="results-chart"><!-- Populated by JS --></div>
+        <div id="personal-best-display"></div>
+        <div class="results-button-group">
+            <button class="btn-primary" onclick="goToWelcome()">Finish</button>
+            <button class="btn-secondary" onclick="startSession()">Do Another Session</button>
+        </div>
+    </div>
+
+    <!-- SCREEN 6: HISTORY -->
+    <div id="screen-history" class="screen">
+        <h2>Your Progress</h2>
+        <ul id="history-list"><!-- Populated by JS --></ul>
+        <button class="btn-primary btn-small" onclick="showWelcome()" style="margin-top: 20px; margin-bottom: 40px;">
+            Back
+        </button>
+    </div>
+
+    <!-- SCREEN 7: MICROPHONE PERMISSION GUIDANCE -->
+    <div id="screen-mic-permission" class="screen">
+        <div class="content-wrapper" style="max-width:560px;">
+            <div class="icon-container">
+                <svg width="72" height="72" viewBox="0 0 72 72" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <circle cx="36" cy="36" r="34" fill="rgba(42,124,124,0.1)" stroke="#2A7C7C" stroke-width="2.5"/>
+                    <rect x="28" y="14" width="16" height="26" rx="8" fill="#2A7C7C"/>
+                    <path d="M20 36c0 8.84 7.16 16 16 16s16-7.16 16-16" stroke="#2A7C7C" stroke-width="3" fill="none" stroke-linecap="round"/>
+                    <line x1="36" y1="52" x2="36" y2="60" stroke="#2A7C7C" stroke-width="3" stroke-linecap="round"/>
+                    <line x1="28" y1="60" x2="44" y2="60" stroke="#2A7C7C" stroke-width="3" stroke-linecap="round"/>
+                </svg>
+            </div>
+            <h2>One quick step</h2>
+            <p class="instruction-text" style="font-size:24px;">
+                Say Ah uses your microphone to track your voice.
+                Your browser will ask permission — here's what to do:
+            </p>
+
+            <!-- Mock Safari / macOS permission dialog -->
+            <div class="mic-safari-dialog">
+
+                <!-- Header: mic outline icon + subtitle + × -->
+                <div class="mic-safari-header">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#8e8e93" stroke-width="1.8" stroke-linecap="round">
+                        <rect x="9" y="2" width="6" height="11" rx="3"/>
+                        <path d="M5 11c0 3.866 3.134 7 7 7s7-3.134 7-7"/>
+                        <line x1="12" y1="18" x2="12" y2="22"/>
+                        <line x1="9"  y1="22" x2="15" y2="22"/>
+                    </svg>
+                    <span class="mic-safari-header-text">This file wants to</span>
+                    <div class="mic-safari-close">×</div>
+                </div>
+
+                <!-- Permission request row -->
+                <div class="mic-safari-request">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#1c1c1e" stroke-width="1.8" stroke-linecap="round">
+                        <rect x="9" y="2" width="6" height="11" rx="3"/>
+                        <path d="M5 11c0 3.866 3.134 7 7 7s7-3.134 7-7"/>
+                        <line x1="12" y1="18" x2="12" y2="22"/>
+                        <line x1="9"  y1="22" x2="15" y2="22"/>
+                    </svg>
+                    <span class="mic-safari-request-text">Use available microphones (1)</span>
+                </div>
+
+                <!-- Preview card: level bar + dropdown label -->
+                <div class="mic-safari-preview-card">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#636366" stroke-width="1.8" stroke-linecap="round">
+                        <rect x="9" y="2" width="6" height="11" rx="3"/>
+                        <path d="M5 11c0 3.866 3.134 7 7 7s7-3.134 7-7"/>
+                        <line x1="12" y1="18" x2="12" y2="22"/>
+                        <line x1="9"  y1="22" x2="15" y2="22"/>
+                    </svg>
+                    <div class="mic-safari-level-track">
+                        <div class="mic-safari-level-fill"></div>
+                    </div>
+                    <div class="mic-safari-dropdown-label">
+                        MacBook Air Mic ▾
+                    </div>
+                </div>
+
+                <!-- Three stacked yellow pill buttons -->
+                <div class="mic-safari-buttons">
+                    <div class="mic-safari-btn mic-safari-btn-primary">Allow while visiting the site</div>
+                    <div class="mic-safari-btn">Allow this time</div>
+                    <div class="mic-safari-btn">Never allow</div>
+                </div>
+            </div>
+
+            <!-- Annotation arrow pointing at the top button -->
+            <div class="mic-safari-annotation">↑ tap this one</div>
+
+            <p class="instruction-text" style="font-size:22px;color:#5A6A6A;margin-top:10px;">
+                A popup like this will appear on your screen.
+                Tap <strong style="color:#1c1c1e;">"Allow while visiting the site"</strong> — you'll only need to do this once.
+            </p>
+            <button class="btn-primary" onclick="requestMicAndBegin()" style="margin-top:32px;">
+                OK, I'm ready
+            </button>
+        </div>
+    </div>
+
+</div><!-- /app-container -->
+
+<script>
+// ============================================================================
+// SAY AH — PARKINSON'S VOICE EXERCISE
+// Integrated feedback engine + UI
+// ============================================================================
+
+// ============================================================================
+// CONFIGURATION
+// ============================================================================
+const TOTAL_REPS              = 15;
+const TARGET_DURATION_SECONDS = 10;   // <-- adjust after user testing
+const MAX_REP_DURATION_SECONDS = 30;
+
+// Audio thresholds
+const ONSET_THRESHOLD         = 0.15;   // RMS to trigger start
+const OFFSET_THRESHOLD        = 0.08;   // RMS to trigger stop
+const OFFSET_HOLD_MS          = 800;    // ms of silence before auto-stop
+const STRAIN_THRESHOLD        = 0.85;   // peak RMS indicating strain
+const STRAIN_DURATION_PERCENT = 0.20;   // fraction of rep at high level
+
+// Audio meter zone thresholds (fraction of full scale)
+const METER_SOFT_THRESHOLD    = 0.06;   // below = "too soft"   → yellow  (≈0.25 ÷ 4)
+const METER_LOUD_THRESHOLD    = 0.18;   // above = "quite loud" → red/orange  (≈0.70 ÷ 4)
+
+// Strip / result chart y-axis ceiling — levels above this are clipped to the top edge.
+// Set to ≈ 4× METER_LOUD_THRESHOLD so the three zones fill the chart proportionally.
+const CHART_MAX_LEVEL         = 0.25;
+
+// Strip chart settings
+const STRIP_INTERVAL_MS  = 500;         // average window (0.5 s)
+const STRIP_MAX_POINTS   = 36;          // 36 × 0.5 s = 18 s of history shown
+
+// Storage keys
+const STORAGE_KEY = 'sayah_sessions';
+const PB_KEY      = 'sayah_personal_best';
+
+// ============================================================================
+// STATE
+// ============================================================================
+let sessionState = {
+    currentRep:       0,
+    sessionDurations: [],
+    sessionLoudness:  [],    // avgRMS per rep — parallel to sessionDurations
+    sessionStartTime: null,
+    personalBest:     0,
+    nextRepTip:       null,  // Tip to show at start of next exercise screen
+    userName:         '',    // User's first name (optional)
+    feedbackHistory:  {}     // Deck-deal state per feedback sub-category key
+};
+
+let audioState = {
+    audioContext:    null,
+    mediaStream:     null,
+    analyser:        null,
+    animationFrameId: null,
+    dataArray:       null
+};
+
+// Smoothed level for the visual meter (exponential moving average)
+let smoothedMeterLevel = 0;
+
+// Strip chart state
+let stripBuffer      = [];                   // committed 0.5 s averages (live, current rep)
+let finalStripBuffer = [];                   // snapshot saved at rep completion for result screen
+let stripAccum       = { sum: 0, count: 0, lastPush: 0 };
+
+let repState = {
+    onsetDetected:    false,
+    onsetTime:        null,
+    offsetStartTime:  null,
+    peakRMS:          0,
+    highAmplitudeTime: 0,
+    sumRMS:           0,   // accumulated for avgRMS calculation
+    rmsCount:         0
+};
+
+// ============================================================================
+// INITIALIZATION
+// ============================================================================
+function initializeEngine() {
+    const pbString = localStorage.getItem(PB_KEY);
+    sessionState.personalBest = pbString ? parseFloat(pbString) : 0;
+
+    // Prime TTS voice list (browsers load voices async)
+    if (window.speechSynthesis) {
+        if (window.speechSynthesis.getVoices().length === 0) {
+            window.speechSynthesis.onvoiceschanged = () => {
+                window.speechSynthesis.getVoices(); // prime cache
+            };
+        }
+    }
+}
+
+// ============================================================================
+// DYNAMIC FEEDBACK GENERATOR
+// ============================================================================
+
+// Pick a random element from an array
+function pick(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
+
+// Fisher-Yates shuffle (returns new array)
+function shuffle(arr) {
+    const a = [...arr];
+    for (let i = a.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [a[i], a[j]] = [a[j], a[i]];
+    }
+    return a;
+}
+
+// Deck-deal picker: cycles through all messages in shuffled order before repeating any.
+// `key` uniquely identifies the message sub-category so each path has its own deck.
+function pickUnused(key, messages) {
+    if (!messages || messages.length === 0) return '';
+    if (messages.length === 1) return messages[0];
+    const hist = sessionState.feedbackHistory;
+    if (!hist[key] || hist[key].order.length !== messages.length) {
+        hist[key] = { order: shuffle(messages.map((_, i) => i)), pos: 0 };
+    }
+    const h = hist[key];
+    if (h.pos >= h.order.length) {
+        h.order = shuffle(messages.map((_, i) => i));
+        h.pos   = 0;
+    }
+    return messages[h.order[h.pos++]];
+}
+
+// Returns name prefix or empty string (used ~30% of the time)
+function namePrefix(name) {
+    return (name && Math.random() < 0.30) ? name + ', ' : '';
+}
+function nameSuffix(name) {
+    return (name && Math.random() < 0.25) ? ', ' + name : '';
+}
+
+function generateFeedback(params) {
+    const { name, duration, repNumber, allDurations, personalBest,
+            avgRMS, allLoudness, category } = params;
+
+    const d  = duration.toFixed(1);
+    const np = namePrefix(name);
+    const ns = nameSuffix(name);
+
+    // Duration context
+    const prevDur     = allDurations.length >= 1 ? allDurations[allDurations.length - 1] : null;
+    const durDelta    = prevDur !== null ? duration - prevDur : null;
+    const durImproved = durDelta !== null && durDelta > 0.4;
+    const durSlipped  = durDelta !== null && durDelta < -0.4;
+    const sessionAvg  = allDurations.length > 0
+        ? (allDurations.reduce((a,b) => a+b,0) / allDurations.length).toFixed(1) : null;
+    const distFromPB  = personalBest > 0 ? (personalBest - duration).toFixed(1) : null;
+
+    // Loudness context
+    const prevLoud     = allLoudness.length >= 1 ? allLoudness[allLoudness.length - 1] : null;
+    const loudImproved = prevLoud !== null && avgRMS > prevLoud * 1.10;
+    const loudDropped  = prevLoud !== null && avgRMS < prevLoud * 0.85;
+    const timesTooLoud = allLoudness.filter(l => l >= METER_LOUD_THRESHOLD).length;
+
+    let spoken = '', display = '', tip = null;
+
+    switch (category) {
+
+        // ── LOUDNESS TOO SOFT ─────────────────────────────────────────────────
+        case 'too_soft':
+            if (loudImproved) {
+                spoken = pickUnused('soft.improving', [
+                    `${np}your voice is getting stronger — I can really hear the difference! Keep pushing for that green zone.`,
+                    `Great direction${ns} — your voice is coming alive. Let's go even bigger next round.`,
+                    `${np}that's more like it! You're finding your sound. Sustain that level all the way through next time.`,
+                    `${np}listen to that improvement! More of that — keep opening up.`,
+                    `Getting louder${ns} — that's exactly the trend we want. Push it right into the green next round.`,
+                ]);
+                tip = "You're getting louder — keep pushing! Sustain that volume the whole way through.";
+            } else if (loudDropped) {
+                spoken = pickUnused('soft.dropped', [
+                    `${np}your voice went a little quieter that round. You've shown you can be louder — let's bring that energy back!`,
+                    `${d} seconds${ns}. You were stronger before — really commit to the volume next round. Don't hold back.`,
+                    `${np}let's recapture that louder sound. Dig deep and give it more next round.`,
+                    `${np}the voice dipped a bit — next time, start louder right from the first note and hold that level.`,
+                    `Remember that stronger sound from before${ns}? That's the target. Really push for it.`,
+                ]);
+                tip = 'Bring your volume back up — think big, open, confident sound.';
+            } else {
+                spoken = pickUnused('soft.general', [
+                    `${np}volume is the key — imagine projecting to the back row of a theatre. Send your voice out there!`,
+                    `Your voice wants to come out${ns}! Open up and really let it. Don't hold back.`,
+                    `${np}try to surprise yourself with how loud you can be. Really commit and push it out!`,
+                    `${d} seconds${ns} — now let's make that sound fill the room. More volume, more power!`,
+                    `${np}think of your voice as a wave — make it a big one. Open your chest and let it go.`,
+                    `${np}call your voice up from deep in your chest. Louder and steadier — that's what we want!`,
+                    `${d} seconds${ns}. Next round: start loud and stay loud. Keep your voice right in the green zone.`,
+                    `${np}your voice has more in it! Open up and let it out — bolder and bigger.`,
+                    `Imagine hailing a taxi across a busy street${ns} — that kind of projection is exactly what we're after.`,
+                    `${np}give that voice some room to grow. Open wide, take a deep breath, and really go for it.`,
+                    `${d} seconds${ns}. Volume is the goal — commit to projecting that sound forward from the very start.`,
+                    `${np}think of your voice as a spotlight. Aim it out into the room — make it fill the space!`,
+                    `${np}the goal is a bold, confident sound — like you really mean it. Don't whisper it, own it!`,
+                    `${d} seconds${ns}. Next round, open your mouth wide and push that sound all the way to the far wall.`,
+                ]);
+                tip = 'FOCUS ON VOLUME — louder is more important than longer right now. Go for the green!';
+            }
+            display = `Louder next round — aim for the green zone!`;
+            break;
+
+        // ── TOO LOUD / STRAINING ──────────────────────────────────────────────
+        case 'too_loud':
+            if (timesTooLoud === 0) {
+                spoken = pickUnused('loud.first', [
+                    `${np}wonderful energy! Ease back just a little — think warm, confident speaking voice rather than full projection. A steady sound actually holds longer.`,
+                    `Great power${ns}! Soften slightly next time — a resonant, comfortable voice is exactly what we're after.`,
+                    `${np}lots of energy there! Dial it back just a touch. Think dinner-table conversation, not stadium announcement.`,
+                    `${np}that voice is ready to go! Just bring the power in a little — strong and sustained beats loud and forced.`,
+                ]);
+                tip = 'Ease back slightly — a comfortable, sustained voice holds longer than a strained one.';
+            } else {
+                spoken = pickUnused('loud.repeat', [
+                    `${np}strong and steady beats loud and strained. Find that comfortable middle — confident, not forced.`,
+                    `${d} seconds${ns}. Find the sweet spot: resonant but relaxed, strong but not pushed. That's the zone.`,
+                    `${np}your voice will carry further when it isn't pushed. Think 'resonant and warm' — it lasts longer too.`,
+                    `${np}ease up slightly. A voice that's comfortable to hold is more powerful than one that's forced.`,
+                    `${d} seconds${ns}. Picture a calm, assured speaker — not shouting, just clear and carrying. That's your target.`,
+                ]);
+                tip = 'Stay in the green zone — sustained and steady beats loud and strained.';
+            }
+            display = `Great effort — ease back just a little next round.`;
+            break;
+
+        // ── VOLUME GOOD: PERSONAL BEST ────────────────────────────────────────
+        case 'personal_best':
+            spoken = pickUnused('pb', [
+                `${np}great volume — and ${d} seconds is a new personal best! You've never held it that long before.`,
+                `A new record${ns} — ${d} seconds, and your voice was right in the zone. Every session you're getting stronger.`,
+                `${d} seconds — that beats your previous best. Strong voice, strong effort${ns}.`,
+                `${np}${d} seconds — a new personal best! Your voice is genuinely getting stronger. That's what this is all about.`,
+                `Personal best${ns} — ${d} seconds with great volume. Remember that feeling and bring it to the next round.`,
+            ]);
+            display = `New personal best — ${d}s! 🌟`;
+            break;
+
+        // ── VOLUME GOOD: EXCELLENT DURATION ───────────────────────────────────
+        case 'great':
+            if (durImproved && durDelta) {
+                spoken = pickUnused('great.improving', [
+                    `${np}great volume — and ${d} seconds, up ${Math.abs(durDelta).toFixed(1)} from last round. Real momentum building.`,
+                    `${d} seconds${ns}, and up ${Math.abs(durDelta).toFixed(1)} seconds. Strong voice, strong hold.`,
+                    `${np}listen to that — ${d} seconds and climbing. Keep that going!`,
+                    `Up to ${d} seconds${ns}, voice in the zone. That's a step in exactly the right direction.`,
+                ]);
+            } else if (distFromPB && parseFloat(distFromPB) < 1.5) {
+                spoken = pickUnused('great.nearPB', [
+                    `${np}voice sounding great — and ${d} seconds puts you just ${distFromPB} seconds off your personal best. So close!`,
+                    `${d} seconds${ns}. Great volume and you're almost at your all-time best. One more push could get you there.`,
+                    `${np}${d} seconds — within striking distance of your best. Same energy next round and you've got it.`,
+                ]);
+            } else {
+                spoken = pickUnused('great.general', [
+                    `${np}that's what we want — good strong voice, and ${d} seconds. Really well done.`,
+                    `Wonderful${ns} — great volume and ${d} seconds. You should feel good about that.`,
+                    `${np}voice in the zone, ${d} seconds on the clock. Excellent round.`,
+                    `${d} seconds${ns}. Strong and sustained — that's the combination we're after.`,
+                    `${np}${d} seconds, voice right where it should be. That's a quality round.`,
+                    `Solid${ns} — ${d} seconds and good volume throughout. Exactly the pattern we want to see.`,
+                    `${np}voice steady, duration strong — ${d} seconds. That's the exercise working as it should.`,
+                ]);
+            }
+            display = `${d}s — excellent!`;
+            break;
+
+        // ── VOLUME GOOD: DECENT DURATION ─────────────────────────────────────
+        case 'good':
+            if (durImproved && durDelta) {
+                spoken = pickUnused('good.improving', [
+                    `${np}great volume — and ${d} seconds, up ${Math.abs(durDelta).toFixed(1)} from before. You're finding your rhythm.`,
+                    `Good improvement${ns} — ${d} seconds this time, voice in the zone.`,
+                    `${np}up to ${d} seconds and your voice is in the green. That's a step forward.`,
+                    `${d} seconds${ns} — and trending up. Voice sounds strong. Keep that going.`,
+                ]);
+            } else if (durSlipped) {
+                spoken = pickUnused('good.slipped', [
+                    `${np}volume is good — ${d} seconds this round. Your body is doing real work; the duration will come.`,
+                    `${d} seconds${ns}, voice in range. A small dip is normal — just keep going.`,
+                    `${np}${d} seconds — slight dip, but your voice is still in the zone. That's what matters right now.`,
+                    `${d} seconds${ns}. Small fluctuations are normal across 15 rounds. Volume's good, so you're on track.`,
+                ]);
+            } else {
+                spoken = pickUnused('good.general', [
+                    `${np}good strong voice — ${d} seconds. Each round is building your endurance.`,
+                    `${d} seconds${ns}, and your volume is right where we want it. Solid work.`,
+                    `${np}nice steady voice — ${d} seconds. You're making real progress.`,
+                    `Good round${ns} — volume on target, ${d} seconds.`,
+                    `${np}${d} seconds with volume in the green. That's exactly what this exercise is for.`,
+                    `Consistent${ns} — voice in range, ${d} seconds. Your voice is getting comfortable at this level.`,
+                    `${np}voice strong, hold solid — ${d} seconds. That's a good round.`,
+                ]);
+            }
+            display = `${d}s — good effort!`;
+            break;
+
+        // ── VOLUME GOOD: BUILDING DURATION ────────────────────────────────────
+        case 'keep_trying':
+            if (sessionAvg) {
+                spoken = pickUnused('keep.avg', [
+                    `${np}great that your voice is in the zone. Push for a little longer next time — see if you can get past ${sessionAvg} seconds.`,
+                    `${d} seconds${ns}. Volume is on point — now stretch that hold. Take a deep breath and really commit.`,
+                    `${np}the voice is there, now build the hold. Next round: keep the sound going just a bit further than before.`,
+                    `${d} seconds${ns} — the volume sounds good. Try to hold through any impulse to stop and squeeze out a bit more.`,
+                    `${np}solid volume — ${d} seconds. Next round, dare yourself to hold past the point you normally stop.`,
+                ]);
+            } else {
+                spoken = pickUnused('keep.general', [
+                    `${np}voice is strong — hold it a little longer next round. Full breath and see how far you can go.`,
+                    `${d} seconds${ns}. Good volume — let's stretch it further. Breathe deep and push through.`,
+                    `${np}you've got the right sound — now see how long you can sustain it. Hold through the urge to stop.`,
+                    `${d} seconds${ns}, voice in the green. Next round: take a full breath and dare yourself to hold longer.`,
+                    `${np}that's the right volume — now let's work on duration. Deep breath and keep that sound going.`,
+                ]);
+            }
+            display = `${d}s — keep going!`;
+            tip = 'Volume sounds good! Now try to hold that sound a little longer each round.';
+            break;
+
+        // ── TIRING ────────────────────────────────────────────────────────────
+        case 'tiring':
+            spoken = pickUnused('tiring', [
+                `${np}your voice is working hard today — that's real effort! Take a comfortable breath before the next round.`,
+                `${d} seconds${ns}. It's natural to ease off as the session progresses. A breath and come back strong.`,
+                `${np}your voice has given a lot today. Slow, easy breath before the next round — you can finish strong.`,
+                `${np}the work is building up — that's the exercise doing its job. Recover a beat and go again.`,
+                `${d} seconds${ns}. Fatigue at this stage means you're pushing. Rest a moment and give the next round everything.`,
+            ]);
+            display = `Take a comfortable breath — you're doing great.`;
+            tip = `Slow breath in, and give the next round everything you've got.`;
+            break;
+    }
+
+    return { spoken, display, tip };
+}
+
+// Session-complete message (also dynamic)
+function generateSessionCompleteMessage(name, durations) {
+    const avg  = (durations.reduce((a,b) => a+b,0) / durations.length).toFixed(1);
+    const best = Math.max(...durations).toFixed(1);
+    const np   = namePrefix(name);
+    return pick([
+        `${np}you completed all 15 rounds. Your session average was ${avg} seconds — that's real work.`,
+        `Fifteen rounds done${name ? ', ' + name : ''}. Best round today: ${best} seconds. Your voice is getting stronger.`,
+        `${np}all 15 rounds complete. Session average: ${avg} seconds. You should feel proud of that effort.`,
+    ]);
+}
+
+// ============================================================================
+// DETECTION ALGORITHMS
+// ============================================================================
+function detectFatigue(durations) {
+    if (durations.length < 3) return false;
+    const last3 = durations.slice(-3);
+    return last3[1] < last3[0] * 0.90 && last3[2] < last3[1] * 0.90;
+}
+
+function detectStrain(peakRMS, highAmplitudeTime, repDurationMs) {
+    if (repDurationMs === 0) return false;
+    return peakRMS > STRAIN_THRESHOLD &&
+           (highAmplitudeTime / repDurationMs) > STRAIN_DURATION_PERCENT;
+}
+
+function determineFeedbackCategory(duration, allDurations, avgRMS, peakRMS, highAmplitudeTime, allLoudness) {
+    const isTooSoft = avgRMS < METER_SOFT_THRESHOLD;
+    const isTooLoud = avgRMS >= METER_LOUD_THRESHOLD;
+
+    // Too loud / straining — ease up (highest priority override)
+    if (isTooLoud || detectStrain(peakRMS, highAmplitudeTime, duration * 1000)) {
+        return 'too_loud';
+    }
+
+    // Too soft — loudness is the primary clinical goal
+    if (isTooSoft) {
+        return 'too_soft';
+    }
+
+    // Volume is good — now evaluate duration quality
+    if (duration > sessionState.personalBest) {
+        sessionState.personalBest = duration;
+        localStorage.setItem(PB_KEY, duration.toString());
+        return 'personal_best';
+    }
+    // Fatigue: check both loudness trend and duration trend
+    if (detectFatigue(allLoudness) || detectFatigue(allDurations)) return 'tiring';
+    if (duration >= TARGET_DURATION_SECONDS)        return 'great';
+    if (duration >= TARGET_DURATION_SECONDS * 0.7)  return 'good';
+    return 'keep_trying';
+}
+
+// ============================================================================
+// TEXT-TO-SPEECH (Web Speech API) — fires after rep completes
+// ============================================================================
+function speakMessage(text) {
+    if (!window.speechSynthesis) return;
+    window.speechSynthesis.cancel();
+
+    const utterance = new SpeechSynthesisUtterance(text);
+    utterance.rate   = 0.88;   // slightly slower = more natural
+    utterance.pitch  = 1.08;   // slightly warmer tone
+    utterance.volume = 1.0;
+
+    const voices = window.speechSynthesis.getVoices();
+    const en = voices.filter(v => v.lang.startsWith('en'));
+
+    // Tier 1: neural/natural online voices (best quality)
+    const naturalKeywords = ['Natural', 'Neural', 'Online', 'Aria', 'Jenny', 'Emma', 'Michelle', 'Sonia', 'Libby'];
+    let selected = null;
+    for (const kw of naturalKeywords) {
+        selected = en.find(v => v.name.includes(kw) && !v.localService);
+        if (selected) break;
+    }
+
+    // Tier 2: known high-quality voices
+    if (!selected) {
+        const preferred = ['Google US English', 'Google UK English Female',
+                           'Samantha', 'Karen', 'Moira', 'Tessa',
+                           'Microsoft Zira Desktop', 'Microsoft Hazel Desktop'];
+        for (const name of preferred) {
+            selected = voices.find(v => v.name.includes(name));
+            if (selected) break;
+        }
+    }
+
+    // Tier 3: any English female-ish voice
+    if (!selected) selected = en.find(v => v.name.toLowerCase().includes('female'));
+
+    // Tier 4: any English
+    if (!selected) selected = en[0] || voices[0];
+
+    if (selected) utterance.voice = selected;
+    window.speechSynthesis.speak(utterance);
+}
+
+// ============================================================================
+// AUDIO CAPTURE — Web Audio API (< 100 ms latency via rAF)
+// ============================================================================
+async function initializeAudio() {
+    try {
+        if (audioState.mediaStream) return true; // already open
+
+        audioState.audioContext = new (window.AudioContext || window.webkitAudioContext)();
+        audioState.mediaStream  = await navigator.mediaDevices.getUserMedia({ audio: true });
+
+        const source = audioState.audioContext.createMediaStreamSource(audioState.mediaStream);
+        audioState.analyser = audioState.audioContext.createAnalyser();
+        audioState.analyser.fftSize = 256;                // small = low latency
+        audioState.analyser.smoothingTimeConstant = 0.3;
+
+        source.connect(audioState.analyser);              // no output — no feedback loop
+        audioState.dataArray = new Uint8Array(audioState.analyser.frequencyBinCount);
+
+        // Hide mic notice if visible
+        const notice = document.getElementById('mic-notice');
+        if (notice) notice.style.display = 'none';
+
+        return true;
+    } catch (err) {
+        console.error('Audio init failed:', err);
+        if (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError') {
+            const notice = document.getElementById('mic-notice');
+            if (notice) notice.style.display = 'block';
+        }
+        return false;
+    }
+}
+
+function stopAudioLoop() {
+    if (audioState.animationFrameId) {
+        cancelAnimationFrame(audioState.animationFrameId);
+        audioState.animationFrameId = null;
+    }
+}
+
+function computeRMS(dataArray) {
+    let sum = 0;
+    for (let i = 0; i < dataArray.length; i++) {
+        const n = (dataArray[i] - 128) / 128;
+        sum += n * n;
+    }
+    return Math.min(1.0, Math.sqrt(sum / dataArray.length) * 2);
+}
+
+function startAudioAnalysisLoop(onRepComplete) {
+    const loop = () => {
+        if (!audioState.analyser) return;
+
+        audioState.analyser.getByteTimeDomainData(audioState.dataArray);
+        const rms = computeRMS(audioState.dataArray);
+
+        updateAudioMeter(rms);
+
+        // Track strain metrics
+        repState.peakRMS = Math.max(repState.peakRMS, rms);
+        if (rms > STRAIN_THRESHOLD) repState.highAmplitudeTime += 16; // ~16 ms/frame
+
+        // ---- ONSET ----
+        if (!repState.onsetDetected && rms > ONSET_THRESHOLD) {
+            repState.onsetDetected   = true;
+            repState.onsetTime       = Date.now();
+            repState.offsetStartTime = null;
+            // Switch instruction text once voice is detected
+            const kgEl = document.querySelector('#screen-exercise .keep-going-text');
+            if (kgEl) kgEl.textContent = 'Keep going... Ahhh';
+        }
+
+        // ---- TIMER UPDATE + LOUDNESS ACCUMULATION ----
+        if (repState.onsetDetected) {
+            repState.sumRMS  += rms;
+            repState.rmsCount++;
+
+            // Strip chart: accumulate and flush every STRIP_INTERVAL_MS
+            stripAccum.sum   += rms;
+            stripAccum.count++;
+            const nowMs = Date.now();
+            if (nowMs - stripAccum.lastPush >= STRIP_INTERVAL_MS) {
+                const avg = stripAccum.count > 0 ? stripAccum.sum / stripAccum.count : 0;
+                stripBuffer.push(avg);
+                if (stripBuffer.length > STRIP_MAX_POINTS) stripBuffer.shift();
+                stripAccum = { sum: 0, count: 0, lastPush: nowMs };
+                drawStripChart();
+            }
+
+            const elapsed = (Date.now() - repState.onsetTime) / 1000;
+            updateDurationDisplay(elapsed);
+
+            if (elapsed >= MAX_REP_DURATION_SECONDS) {
+                onRepComplete(elapsed);
+                return;
+            }
+        }
+
+        // ---- OFFSET DETECTION ----
+        if (repState.onsetDetected) {
+            if (rms < OFFSET_THRESHOLD) {
+                if (!repState.offsetStartTime) repState.offsetStartTime = Date.now();
+            } else {
+                repState.offsetStartTime = null; // voice came back
+            }
+
+            if (repState.offsetStartTime) {
+                const heldSilence = Date.now() - repState.offsetStartTime;
+                if (heldSilence >= OFFSET_HOLD_MS) {
+                    const duration = (Date.now() - repState.onsetTime) / 1000;
+                    onRepComplete(duration);
+                    return;
+                }
+            }
+        }
+
+        audioState.animationFrameId = requestAnimationFrame(loop);
+    };
+
+    audioState.animationFrameId = requestAnimationFrame(loop);
+}
+
+// ============================================================================
+// REP COMPLETION
+// ============================================================================
+function handleRepComplete(duration) {
+    finalStripBuffer = [...stripBuffer];  // snapshot for result screen
+    stopAudioLoop();
+    sessionState.sessionDurations.push(duration);
+
+    // Compute average RMS during active phonation
+    const avgRMS = repState.rmsCount > 0 ? repState.sumRMS / repState.rmsCount : 0;
+    sessionState.sessionLoudness.push(avgRMS);
+
+    const prevDurations = sessionState.sessionDurations.slice(0, -1);
+    const prevLoudness  = sessionState.sessionLoudness.slice(0, -1);
+
+    const category = determineFeedbackCategory(
+        duration,
+        prevDurations,
+        avgRMS,
+        repState.peakRMS,
+        repState.highAmplitudeTime,
+        prevLoudness
+    );
+
+    const feedback = generateFeedback({
+        name:         sessionState.userName,
+        duration,
+        repNumber:    sessionState.currentRep,
+        allDurations: prevDurations,
+        personalBest: sessionState.personalBest,
+        avgRMS,
+        allLoudness:  prevLoudness,
+        category
+    });
+
+    if (feedback.spoken) speakMessage(feedback.spoken);
+
+    showRepResult(
+        sessionState.currentRep,
+        duration,
+        category,
+        feedback.display,
+        feedback.tip
+    );
+}
+
+// ============================================================================
+// SESSION MANAGEMENT (public API)
+// ============================================================================
+async function startSession() {
+    // Capture name
+    const nameEl = document.getElementById('user-name-input');
+    sessionState.userName = nameEl ? nameEl.value.trim() : '';
+
+    // Reset session state
+    sessionState.currentRep       = 1;
+    sessionState.sessionDurations = [];
+    sessionState.sessionLoudness  = [];
+    sessionState.sessionStartTime = Date.now();
+
+    // If mic already granted, skip guidance screen
+    if (audioState.mediaStream) {
+        updateRepLabels(1);
+        updateProgressBar('pre-rep-progress', 1);
+        showScreen('screen-pre-rep');
+        return;
+    }
+
+    // Show mic permission guidance first
+    showScreen('screen-mic-permission');
+}
+
+async function requestMicAndBegin() {
+    const ok = await initializeAudio();
+    if (!ok) {
+        // Stay on mic screen — initializeAudio already shows mic-notice on welcome
+        // Show an inline message on the permission screen instead
+        const btn = document.querySelector('#screen-mic-permission .btn-primary');
+        if (btn) {
+            btn.textContent = 'Try again';
+            btn.style.background = '#E07B5A';
+        }
+        const wrapper = document.querySelector('#screen-mic-permission .content-wrapper');
+        if (wrapper && !document.getElementById('mic-perm-error')) {
+            const err = document.createElement('p');
+            err.id = 'mic-perm-error';
+            err.style.cssText = 'font-size:20px;color:#E07B5A;margin-top:12px;text-align:center;';
+            err.textContent = "It looks like microphone access was blocked. Please check your browser's site permissions and try again.";
+            wrapper.appendChild(err);
+        }
+        return;
+    }
+    updateRepLabels(1);
+    updateProgressBar('pre-rep-progress', 1);
+    showScreen('screen-pre-rep');
+}
+
+function startRep() {
+    // Reset per-rep state
+    repState.onsetDetected    = false;
+    repState.onsetTime        = null;
+    repState.offsetStartTime  = null;
+    repState.peakRMS          = 0;
+    repState.highAmplitudeTime = 0;
+    repState.sumRMS           = 0;
+    repState.rmsCount         = 0;
+
+    // Reset strip chart for this rep
+    stripBuffer = [];
+    stripAccum  = { sum: 0, count: 0, lastPush: Date.now() };
+
+    updateDurationDisplay(0.0);
+    updateProgressBar('exercise-progress', sessionState.currentRep);
+    updateRepLabels(sessionState.currentRep);
+
+    // Reset meter to pulsing state
+    smoothedMeterLevel = 0;
+    const fill = document.getElementById('audio-meter-fill');
+    if (fill) {
+        fill.style.height = '0%';
+        fill.style.backgroundColor = '#34c759';
+        fill.classList.add('pulsing');
+    }
+
+    // Pre-onset instruction (changes to "Keep going" once voice is detected)
+    const kgEl = document.querySelector('#screen-exercise .keep-going-text');
+    if (kgEl) kgEl.textContent = 'Take a breath... then say Ahh';
+
+    // Show tip from previous rep (fades after 5 s)
+    const tipEl = document.getElementById('exercise-tip');
+    if (tipEl) {
+        if (sessionState.nextRepTip) {
+            tipEl.textContent   = sessionState.nextRepTip;
+            tipEl.style.display = 'block';
+            tipEl.style.opacity = '1';
+            clearTimeout(tipEl._fadeTimer);
+            tipEl._fadeTimer = setTimeout(() => {
+                tipEl.style.opacity = '0';
+                setTimeout(() => { tipEl.style.display = 'none'; }, 600);
+            }, 5000);
+        } else {
+            tipEl.style.display = 'none';
+        }
+        sessionState.nextRepTip = null;
+    }
+
+    showScreen('screen-exercise');
+
+    // After the screen is visible: size canvas to its rendered width, draw empty chart
+    setTimeout(() => {
+        const canvas = document.getElementById('strip-chart');
+        if (canvas) {
+            canvas.width  = canvas.offsetWidth  || 480;
+            canvas.height = canvas.offsetHeight || 88;
+            drawStripChart();
+        }
+        const stopBtn = document.getElementById('stop-btn');
+        if (stopBtn) stopBtn.focus();
+    }, 100);
+
+    if (audioState.analyser) {
+        startAudioAnalysisLoop(handleRepComplete);
+    }
+}
+
+function stopRep() {
+    if (!repState.onsetDetected) {
+        // No onset yet — silently restart the listen loop rather than alarming user
+        stopAudioLoop();
+        setTimeout(() => {
+            if (audioState.analyser) startAudioAnalysisLoop(handleRepComplete);
+        }, 300);
+        return;
+    }
+    stopAudioLoop();
+    const duration = (Date.now() - repState.onsetTime) / 1000;
+    handleRepComplete(duration);
+}
+
+function nextRep() {
+    if (sessionState.currentRep < TOTAL_REPS) {
+        sessionState.currentRep++;
+        // Go straight to the exercise screen — no extra click needed.
+        // The tip from the previous rep is shown as a brief overlay by startRep().
+        startRep();
+    }
+    // Note: When currentRep === TOTAL_REPS the button becomes "See My Results"
+    // which calls showSessionComplete(), not nextRep(). This prevents double-save.
+}
+
+function _completeSession() {
+    saveSession(sessionState.sessionDurations);
+
+    const durations = sessionState.sessionDurations;
+    const best      = Math.max(...durations);
+    const summaryMsg = generateSessionCompleteMessage(sessionState.userName, durations);
+
+    speakMessage(summaryMsg);
+    showSessionCompleteData(durations, summaryMsg, best);
+}
+
+// Called from "See My Results" button on the final rep result screen
+function showSessionComplete() {
+    _completeSession();
+}
+
+function goToWelcome() {
+    stopAudioLoop();
+    sessionState.currentRep       = 0;
+    sessionState.sessionDurations = [];
+    showScreen('screen-welcome');
+}
+
+function showWelcome() { goToWelcome(); }
+
+function showHistory() {
+    const sessions  = loadHistory();
+    const listEl    = document.getElementById('history-list');
+    listEl.innerHTML = '';
+
+    if (sessions.length === 0) {
+        const li = document.createElement('li');
+        li.style.cssText = 'font-size:24px;color:#5A6A6A;text-align:center;padding:20px;';
+        li.textContent = 'No sessions yet — start your first one!';
+        listEl.appendChild(li);
+    } else {
+        for (let i = sessions.length - 1; i >= 0; i--) {
+            const s    = sessions[i];
+            const d    = new Date(s.date);
+            const date = d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+            const li   = document.createElement('li');
+            li.innerHTML = `
+                <div class="history-item">
+                    <div class="history-item-date">${date}</div>
+                    <div class="history-item-stat">Average: ${s.average.toFixed(1)}s &nbsp;|&nbsp; Best: ${s.best.toFixed(1)}s</div>
+                </div>`;
+            listEl.appendChild(li);
+        }
+    }
+
+    showScreen('screen-history');
+}
+
+// ============================================================================
+// STORAGE
+// ============================================================================
+function saveSession(durations) {
+    if (!durations || durations.length === 0) return;
+    const sessions = loadHistory();
+    sessions.push({
+        date:     new Date().toISOString(),
+        durations,
+        average:  durations.reduce((a, b) => a + b, 0) / durations.length,
+        best:     Math.max(...durations)
+    });
+    if (sessions.length > 30) sessions.shift();
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(sessions));
+}
+
+function loadHistory() {
+    try { return JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]'); }
+    catch (e) { return []; }
+}
+
+// ============================================================================
+// UI — SCREEN MANAGEMENT
+// ============================================================================
+function showScreen(id) {
+    document.querySelectorAll('.screen').forEach(s => {
+        s.classList.remove('active');
+        s.style.display = 'none';
+    });
+    const el = document.getElementById(id);
+    if (el) {
+        el.style.display = 'flex';
+        // Trigger reflow so transition fires
+        el.getBoundingClientRect();
+        el.classList.add('active');
+        el.scrollTop = 0;
+
+        // Show tip if on pre-rep screen and tip is available
+        if (id === 'screen-pre-rep') {
+            setTimeout(() => showRepTip(), 50);
+        }
+
+        // Focus primary action button after screen transition
+        setTimeout(() => {
+            let primaryBtn = null;
+            if (id === 'screen-welcome') {
+                primaryBtn = el.querySelector('.btn-primary');
+            } else if (id === 'screen-pre-rep') {
+                primaryBtn = el.querySelector('.btn-primary');
+            } else if (id === 'screen-exercise') {
+                primaryBtn = el.querySelector('.btn-secondary');
+            } else if (id === 'screen-rep-result') {
+                primaryBtn = el.querySelector('.btn-primary');
+            } else if (id === 'screen-session-complete') {
+                primaryBtn = el.querySelector('.btn-primary');
+            } else if (id === 'screen-history') {
+                primaryBtn = el.querySelector('.btn-primary');
+            }
+            if (primaryBtn) primaryBtn.focus();
+        }, 100);
+    }
+}
+
+// ============================================================================
+// UI — CALLBACKS (called by engine)
+// ============================================================================
+function updateAudioMeter(rawLevel) {
+    const fill = document.getElementById('audio-meter-fill');
+    if (!fill) return;
+
+    // Asymmetric exponential moving average:
+    //   fast rise   alpha=0.25 → τ ≈  55 ms  (snappy onset response)
+    //   medium fall alpha=0.15 → τ ≈ 100 ms  (settles to sustained level in
+    //                                          ~300 ms instead of holding the
+    //                                          onset peak for 1-2 seconds)
+    const alpha = rawLevel > smoothedMeterLevel ? 0.25 : 0.15;
+    smoothedMeterLevel = smoothedMeterLevel * (1 - alpha) + rawLevel * alpha;
+    const level = Math.min(smoothedMeterLevel, 1);
+
+    if (level > 0.05) fill.classList.remove('pulsing');
+    // Scale against CHART_MAX_LEVEL so the fill spans the full bar at the "ceiling"
+    const scaledLevel = Math.min(level, CHART_MAX_LEVEL) / CHART_MAX_LEVEL;
+    fill.style.height = (scaledLevel * 100) + '%';
+
+    // Zone-based colour
+    if (level < METER_SOFT_THRESHOLD) {
+        fill.style.backgroundColor = '#f4c430';   // yellow  — too soft
+    } else if (level < METER_LOUD_THRESHOLD) {
+        fill.style.backgroundColor = '#34c759';   // green   — target range
+    } else {
+        fill.style.backgroundColor = '#e07b5a';   // orange-red — quite loud
+    }
+}
+
+// ── Shared chart renderer ──────────────────────────────────────────────────
+// opts: { dotRadius, timeLabels }
+//   dotRadius  - normal dot size (default 3)
+//   timeLabels - draw time axis along bottom (default false)
+function _renderLoudnessChart(ctx, W, H, buffer, opts) {
+    const dotRadius  = (opts && opts.dotRadius)  || 3;
+    const timeLabels = !!(opts && opts.timeLabels);
+    const labelH     = timeLabels ? 18 : 0;   // pixels reserved for time axis
+    const cH         = H - labelH;            // chart drawing height
+
+    ctx.clearRect(0, 0, W, H);
+
+    // Scale helper: convert a loudness level (0–1) to a 0–1 chart fraction,
+    // clamped to CHART_MAX_LEVEL so values above the ceiling don't overflow.
+    const scl = lvl => Math.min(Math.max(lvl, 0), CHART_MAX_LEVEL) / CHART_MAX_LEVEL;
+
+    // Zone background bands (top = loud, bottom = soft)
+    const softFrac = scl(METER_SOFT_THRESHOLD);
+    const loudFrac = scl(METER_LOUD_THRESHOLD);
+    [
+        { yFrac: 0,            hFrac: 1 - loudFrac,            color: 'rgba(224,123,90,0.18)' },
+        { yFrac: 1 - loudFrac, hFrac: loudFrac - softFrac,     color: 'rgba(52,199,89,0.18)'  },
+        { yFrac: 1 - softFrac, hFrac: softFrac,                color: 'rgba(244,196,52,0.18)' },
+    ].forEach(z => {
+        ctx.fillStyle = z.color;
+        ctx.fillRect(0, cH * z.yFrac, W, cH * z.hFrac);
+    });
+
+    // Dashed zone-boundary lines
+    ctx.save();
+    ctx.setLineDash([4, 4]);
+    ctx.strokeStyle = 'rgba(0,0,0,0.12)';
+    ctx.lineWidth   = 1;
+    [METER_LOUD_THRESHOLD, METER_SOFT_THRESHOLD].forEach(lvl => {
+        const y = cH * (1 - scl(lvl));
+        ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(W, y); ctx.stroke();
+    });
+    ctx.restore();
+
+    // Zone labels (right-aligned inside chart area)
+    ctx.save();
+    ctx.font      = `${timeLabels ? 11 : 10}px -apple-system,"SF Pro Text",Arial,sans-serif`;
+    ctx.textAlign = 'right';
+    [
+        { text: 'quite loud', y: cH * (1 - loudFrac) / 2,                          color: 'rgba(192,78,38,0.65)'  },
+        { text: 'target',     y: cH * (1 - (loudFrac + softFrac) / 2),             color: 'rgba(26,106,26,0.65)'  },
+        { text: 'too soft',   y: cH * (1 - softFrac / 2),                          color: 'rgba(138,104,0,0.65)'  },
+    ].forEach(l => { ctx.fillStyle = l.color; ctx.fillText(l.text, W - 5, l.y + 4); });
+    ctx.restore();
+
+    if (!buffer || buffer.length === 0) return;
+
+    // Geometry — left-anchored: first point at x=0, chart grows rightward
+    const xStep  = W / STRIP_MAX_POINTS;
+    const lvlToY = lvl => cH * (1 - scl(lvl));
+    const zoneClr = lvl => {
+        if (lvl < METER_SOFT_THRESHOLD) return '#c9a800';
+        if (lvl < METER_LOUD_THRESHOLD) return '#1a8a3a';
+        return '#c04e26';
+    };
+
+    // Filled area under the curve
+    ctx.beginPath();
+    ctx.moveTo(0, cH);
+    buffer.forEach((lvl, i) => ctx.lineTo(i * xStep, lvlToY(lvl)));
+    ctx.lineTo((buffer.length - 1) * xStep, cH);
+    ctx.closePath();
+    ctx.fillStyle = 'rgba(42,124,124,0.13)';
+    ctx.fill();
+
+    // Line segments, coloured by zone
+    ctx.lineWidth = 2.5; ctx.lineJoin = 'round'; ctx.lineCap = 'round';
+    for (let i = 1; i < buffer.length; i++) {
+        ctx.beginPath();
+        ctx.moveTo((i - 1) * xStep, lvlToY(buffer[i - 1]));
+        ctx.lineTo(      i * xStep, lvlToY(buffer[i]));
+        ctx.strokeStyle = zoneClr(buffer[i]);
+        ctx.stroke();
+    }
+
+    // Dots at each 0.5 s point
+    buffer.forEach((lvl, i) => {
+        const x = i * xStep, y = lvlToY(lvl), isLast = i === buffer.length - 1;
+        ctx.beginPath();
+        ctx.arc(x, y, isLast ? dotRadius * 1.5 : dotRadius, 0, Math.PI * 2);
+        ctx.fillStyle = zoneClr(lvl);
+        ctx.fill();
+        if (isLast) { ctx.strokeStyle = 'white'; ctx.lineWidth = 1.5; ctx.stroke(); }
+    });
+
+    // Time axis labels along the bottom
+    if (timeLabels) {
+        ctx.save();
+        ctx.font      = '11px -apple-system,"SF Pro Text",Arial,sans-serif';
+        ctx.fillStyle = 'rgba(0,0,0,0.38)';
+        for (let p = 0; p < STRIP_MAX_POINTS; p += 10) {
+            const x = p * xStep;
+            ctx.textAlign = p === 0 ? 'left' : 'center';
+            ctx.fillText((p / 2) + 's', p === 0 ? 2 : x, H - 3);
+        }
+        ctx.restore();
+    }
+}
+
+// Live strip chart on the exercise screen
+function drawStripChart() {
+    const canvas = document.getElementById('strip-chart');
+    if (!canvas || !canvas.width) return;
+    _renderLoudnessChart(canvas.getContext('2d'), canvas.width, canvas.height,
+                         stripBuffer, { dotRadius: 3 });
+}
+
+// Post-rep summary chart on the result screen (larger, with time axis)
+function drawResultChart() {
+    const canvas = document.getElementById('result-strip-chart');
+    if (!canvas) return;
+    canvas.width  = canvas.offsetWidth  || 480;
+    canvas.height = canvas.offsetHeight || 140;
+    _renderLoudnessChart(canvas.getContext('2d'), canvas.width, canvas.height,
+                         finalStripBuffer, { dotRadius: 4.5, timeLabels: true });
+}
+
+function updateDurationDisplay(seconds) {
+    const el = document.getElementById('duration-display');
+    if (el) el.textContent = seconds.toFixed(1) + 's';
+}
+
+function showRepResult(repNumber, duration, category, message, tip) {
+    const el = (id) => document.getElementById(id);
+
+    el('result-rep-number').textContent = `Round ${repNumber} of 15`;
+    el('result-duration').textContent   = `You held it for ${duration.toFixed(1)} seconds!`;
+    el('result-message').textContent    = message || '';
+
+    // Store tip for next pre-rep screen (will be shown when nextRep() -> showScreen('screen-pre-rep'))
+    if (repNumber < TOTAL_REPS) {
+        sessionState.nextRepTip = tip;
+    }
+
+    // Update progress bar
+    updateProgressBar('result-progress', repNumber);
+
+    // Wire next button
+    const nextBtn = el('next-btn');
+    if (nextBtn) {
+        if (repNumber >= TOTAL_REPS) {
+            nextBtn.textContent = 'See My Results';
+            nextBtn.onclick = showSessionComplete;
+        } else {
+            nextBtn.textContent = 'Next Round';
+            nextBtn.onclick = nextRep;
+        }
+    }
+
+    showScreen('screen-rep-result');
+
+    // Draw the final-rep loudness chart once the canvas is visible and sized
+    setTimeout(() => drawResultChart(), 80);
+}
+
+function showSessionCompleteData(durations, summaryMessage, personalBest) {
+    const el = (id) => document.getElementById(id);
+
+    el('session-summary-message').textContent = summaryMessage;
+    el('personal-best-display').textContent   = `All-time personal best: ${personalBest.toFixed(1)}s`;
+
+    buildResultsChart(durations);
+    showScreen('screen-session-complete');
+}
+
+// ============================================================================
+// UI — UTILITIES
+// ============================================================================
+function clearRepResultTip() {
+    sessionState.nextRepTip = null;
+}
+
+function showRepTip() {
+    const tipEl = document.getElementById('pre-rep-tip');
+    if (tipEl && sessionState.nextRepTip) {
+        tipEl.textContent = sessionState.nextRepTip;
+        tipEl.style.display = 'block';
+    } else if (tipEl) {
+        tipEl.style.display = 'none';
+    }
+}
+
+function updateProgressBar(barId, currentRepNum) {
+    const bar = document.getElementById(barId);
+    if (bar) bar.style.width = ((currentRepNum / TOTAL_REPS) * 100) + '%';
+}
+
+function updateRepLabels(rep) {
+    const label = `Round ${rep} of ${TOTAL_REPS}`;
+    const pre   = document.getElementById('pre-rep-number');
+    const ex    = document.getElementById('exercise-rep-number');
+    if (pre) pre.textContent = label;
+    if (ex)  ex.textContent  = label;
+}
+
+function buildResultsChart(durations) {
+    const container = document.getElementById('results-chart');
+    if (!container) return;
+
+    const maxDur = Math.max(...durations, TARGET_DURATION_SECONDS * 1.1);
+    const targetPct = (TARGET_DURATION_SECONDS / maxDur) * 100;
+
+    container.innerHTML = '<div style="font-size:24px;font-weight:600;color:#2A7C7C;margin-bottom:20px;">Results by Round</div>';
+
+    durations.forEach((dur, i) => {
+        const pct  = (dur / maxDur) * 100;
+        const row  = document.createElement('div');
+        row.className = 'chart-row';
+        row.innerHTML = `
+            <div class="chart-label">Round ${i + 1}</div>
+            <div class="chart-bar-container">
+                <div class="target-line" style="left:${targetPct}%"></div>
+                <div class="chart-bar" style="width:${pct}%">
+                    ${pct > 15 ? `<span class="chart-bar-value">${dur.toFixed(1)}s</span>` : ''}
+                </div>
+            </div>`;
+        container.appendChild(row);
+    });
+
+    // Legend
+    const legend = document.createElement('div');
+    legend.style.cssText = 'font-size:18px;color:#5A6A6A;margin-top:20px;text-align:center;';
+    legend.innerHTML = `<span style="display:inline-block;width:14px;height:14px;background:#E07B5A;border-radius:2px;vertical-align:middle;margin-right:6px;"></span>Target: ${TARGET_DURATION_SECONDS}s`;
+    container.appendChild(legend);
+}
+
+// ============================================================================
+// STARTUP
+// ============================================================================
+document.addEventListener('DOMContentLoaded', () => {
+    initializeEngine();
+    showScreen('screen-welcome');
+});
+</script>
+</body>
+</html>
