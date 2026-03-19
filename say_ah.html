@@ -1111,6 +1111,12 @@ const CHART_MAX_LEVEL         = 0.25;
 const STRIP_INTERVAL_MS  = 500;         // average window (0.5 s)
 const STRIP_MAX_POINTS   = 36;          // 36 × 0.5 s = 18 s of history shown
 
+// ── TTS config ───────────────────────────────────────────────────────────────
+// (Kokoro via HF API blocked by CORS — using enhanced browser voices instead)
+const HF_TOKEN     = '';   // reserved for future API-based TTS
+const KOKORO_VOICE = 'af_heart';
+const KOKORO_SPEED = 0.92;
+
 // Storage keys
 const STORAGE_KEY = 'sayah_sessions';
 const PB_KEY      = 'sayah_personal_best';
@@ -1472,47 +1478,121 @@ function determineFeedbackCategory(duration, allDurations, avgRMS, peakRMS, high
 }
 
 // ============================================================================
-// TEXT-TO-SPEECH (Web Speech API) — fires after rep completes
+// TEXT-TO-SPEECH — Kokoro (HuggingFace) with browser fallback
 // ============================================================================
-function speakMessage(text) {
+
+// Entry point — tries Kokoro first, falls back to browser Web Speech API
+async function speakMessage(text) {
+    if (HF_TOKEN) {
+        const ok = await _speakKokoro(text);
+        if (ok) return;
+    }
+    _speakBrowser(text);
+}
+
+// Kokoro via HuggingFace Inference API
+async function _speakKokoro(text) {
+    try {
+        console.log('[Kokoro] Requesting TTS for:', text.slice(0, 60) + '...');
+        const res = await fetch(
+            'https://api-inference.huggingface.co/models/hexgrad/Kokoro-82M',
+            {
+                method:  'POST',
+                headers: {
+                    'Authorization': `Bearer ${HF_TOKEN}`,
+                    'Content-Type':  'application/json'
+                },
+                body: JSON.stringify({
+                    inputs:     text,
+                    parameters: { voice: KOKORO_VOICE, speed: KOKORO_SPEED }
+                })
+            }
+        );
+        console.log('[Kokoro] Response status:', res.status, 'Content-Type:', res.headers.get('content-type'));
+        if (!res.ok) {
+            const errText = await res.text();
+            console.warn('[Kokoro] API error', res.status, errText, '— falling back to browser TTS');
+            return false;
+        }
+        const blob = await res.blob();
+        console.log('[Kokoro] Blob size:', blob.size, 'type:', blob.type);
+        if (!blob.size) { console.warn('[Kokoro] Empty blob — falling back'); return false; }
+        const url   = URL.createObjectURL(blob);
+        const audio = new Audio(url);
+        audio.onended = () => URL.revokeObjectURL(url);
+        audio.onerror = (e) => console.warn('[Kokoro] Audio playback error:', e);
+        audio.play();
+        return true;
+    } catch (err) {
+        console.warn('[Kokoro] Fetch failed — falling back to browser TTS:', err);
+        return false;
+    }
+}
+
+// Browser Web Speech API — picks the best available voice on the current device
+function _speakBrowser(text) {
     if (!window.speechSynthesis) return;
     window.speechSynthesis.cancel();
 
     const utterance = new SpeechSynthesisUtterance(text);
-    utterance.rate   = 0.88;   // slightly slower = more natural
-    utterance.pitch  = 1.08;   // slightly warmer tone
+    utterance.rate   = 0.88;
+    utterance.pitch  = 1.0;
     utterance.volume = 1.0;
 
-    const voices = window.speechSynthesis.getVoices();
-    const en = voices.filter(v => v.lang.startsWith('en'));
+    // voices() may be empty on first call; wait for them to load
+    const trySpeak = () => {
+        const voices = window.speechSynthesis.getVoices();
+        if (!voices.length) return;   // onvoiceschanged will retry
 
-    // Tier 1: neural/natural online voices (best quality)
-    const naturalKeywords = ['Natural', 'Neural', 'Online', 'Aria', 'Jenny', 'Emma', 'Michelle', 'Sonia', 'Libby'];
-    let selected = null;
-    for (const kw of naturalKeywords) {
-        selected = en.find(v => v.name.includes(kw) && !v.localService);
-        if (selected) break;
-    }
+        const en = voices.filter(v => v.lang.startsWith('en'));
+        let selected = null;
 
-    // Tier 2: known high-quality voices
-    if (!selected) {
-        const preferred = ['Google US English', 'Google UK English Female',
-                           'Samantha', 'Karen', 'Moira', 'Tessa',
-                           'Microsoft Zira Desktop', 'Microsoft Hazel Desktop'];
-        for (const name of preferred) {
-            selected = voices.find(v => v.name.includes(name));
+        // Tier 1: macOS premium / Siri voices (downloaded via Accessibility settings)
+        // These sound genuinely human — best option on macOS + Safari
+        for (const name of [
+            'Ava (Enhanced)', 'Ava',
+            'Samantha (Enhanced)',
+            'Siri (Female)', 'Siri Female',
+            'Kate (Enhanced)', 'Kate',
+            'Serena (Enhanced)', 'Serena',
+            'Karen (Enhanced)', 'Karen',
+            'Moira (Enhanced)', 'Moira',
+        ]) {
+            selected = voices.find(v => v.name === name);
             if (selected) break;
         }
+
+        // Tier 2: any macOS "Enhanced" or "Compact" female voice
+        if (!selected) selected = en.find(v => v.name.includes('Enhanced') && !v.name.toLowerCase().includes('male'));
+        if (!selected) selected = en.find(v => v.name.includes('Compact')  && !v.name.toLowerCase().includes('male'));
+
+        // Tier 3: Google / Microsoft cloud voices (Chrome / Edge)
+        if (!selected) {
+            for (const name of ['Google US English', 'Google UK English Female',
+                                'Microsoft Aria Online', 'Microsoft Jenny Online',
+                                'Microsoft Zira', 'Microsoft Hazel']) {
+                selected = voices.find(v => v.name.includes(name));
+                if (selected) break;
+            }
+        }
+
+        // Tier 4: any labelled female English voice
+        if (!selected) selected = en.find(v => /female/i.test(v.name));
+
+        // Tier 5: any English
+        if (!selected) selected = en[0] || voices[0];
+
+        console.log('[TTS] Using voice:', selected ? selected.name : 'default');
+        if (selected) utterance.voice = selected;
+        window.speechSynthesis.speak(utterance);
+    };
+
+    // Voices load asynchronously in some browsers — retry when ready
+    if (window.speechSynthesis.getVoices().length) {
+        trySpeak();
+    } else {
+        window.speechSynthesis.onvoiceschanged = () => { trySpeak(); };
     }
-
-    // Tier 3: any English female-ish voice
-    if (!selected) selected = en.find(v => v.name.toLowerCase().includes('female'));
-
-    // Tier 4: any English
-    if (!selected) selected = en[0] || voices[0];
-
-    if (selected) utterance.voice = selected;
-    window.speechSynthesis.speak(utterance);
 }
 
 // ============================================================================
